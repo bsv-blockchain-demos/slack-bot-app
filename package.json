@@ -1,0 +1,17 @@
+{
+  "name": "slackapp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@slack/bolt": "^4.4.0",
+    "dotenv": "^16.5.0",
+    "mongodb": "^6.17.0"
+  }
+}
