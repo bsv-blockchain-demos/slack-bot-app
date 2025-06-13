@@ -56,6 +56,7 @@ async function saveThread(threadData, client) {
     edited: !!message.edited,
     deleted: false,
     reactions: message.reactions || [],
+    votes: {upvotes: [], downvotes: []},
     raw: {files: message.files || [], thread_ts: message.thread_ts}
   }));
 
@@ -132,6 +133,7 @@ async function addReply(threadTs, message, client) {
     edited: !!message.edited,
     deleted: false,
     reactions: message.reactions || [],
+    votes: {upvotes: [], downvotes: []},
     raw: {files: message.files || [], thread_ts: message.thread_ts},
   };
 
@@ -295,7 +297,7 @@ async function refreshThread(threadTs, channelId, messages, userId, client) {
       edited: !!message.edited,
       deleted: false, // We don't know if it was deleted, so assume not
       reactions: message.reactions || [],
-      votes: [],
+      votes: {upvotes: [], downvotes: []},
       raw: {files: message.files || [], thread_ts: message.thread_ts},
     }));
 

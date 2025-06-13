@@ -90,6 +90,13 @@ app.event("reaction_added", async ({ event, client, logger }) => {
           thread_ts: threadTs,
           text: `🗑 This thread has been deleted successfully.`,
         });
+
+        // Remove :white_check_mark: reaction
+        await client.reactions.remove({
+          name: "white_check_mark",
+          channel: item.channel,
+          timestamp: item.ts,
+        });
         
         return;
       }
