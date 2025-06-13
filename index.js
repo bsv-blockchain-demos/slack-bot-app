@@ -2,7 +2,7 @@ const { App } = require("@slack/bolt");
 require("dotenv").config();
 
 // Import thread management functions
-const { saveThread, addReply, updateEditedMessage, markMessageDeleted, refreshThread, threadExists } = require('./threadManager.js');
+const { saveThread, addReply, updateEditedMessage, markMessageDeleted, refreshThread, threadExists, deleteThread } = require('./threadManager.js');
 
 // Initialize the app with proper configuration
 const app = new App({
@@ -18,11 +18,12 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       const { user, item, reaction } = event;
   
       // Filter: only react to specific emoji for saving threads
-      if (reaction !== "inbox_tray" && reaction !== "arrows_counterclockwise") return;
+      if (reaction !== "inbox_tray" && reaction !== "arrows_counterclockwise" && reaction !== "wastebasket") return;
       
       // Different behavior based on reaction type
       const isSaveRequest = reaction === "inbox_tray";
       const isRefreshRequest = reaction === "arrows_counterclockwise";
+      const isDeleteRequest = reaction === "wastebasket";
 
       console.log("Item: ", item);
   
@@ -61,6 +62,35 @@ app.event("reaction_added", async ({ event, client, logger }) => {
 
       if (threadInfo.messages.length === 1) {
         console.log("Thread is empty. Ignoring.");
+        return;
+      }
+
+      if (isDeleteRequest) {
+        const exists = await threadExists(threadTs);
+        if (!exists) {
+          console.log("Cannot delete a thread that hasn't been saved yet");
+          await client.chat.postEphemeral({
+            channel: item.channel,
+            user: user,
+            thread_ts: threadTs,
+            text: `⚠️ This thread hasn't been saved yet. Please react with :inbox_tray: first.`,
+          });
+          return;
+        }
+        
+        // Delete the thread - pass the client to fetch user info
+        const deleteResult = await deleteThread(threadTs, item.channel, threadResult.messages, user);
+        console.log(`🗑 Deleted thread ${threadTs} from channel ${item.channel}`);
+        console.log(`Delete result: ${deleteResult.success ? 'Success' : 'Failed'}`);
+        
+        // Send confirmation
+        await client.chat.postEphemeral({
+          channel: item.channel,
+          user: user,
+          thread_ts: threadTs,
+          text: `🗑 This thread has been deleted successfully.`,
+        });
+        
         return;
       }
 

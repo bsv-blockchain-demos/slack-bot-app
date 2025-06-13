@@ -400,6 +400,28 @@ async function getUserInfoByID(client, ID) {
   }
 }
 
+async function deleteThread(threadTs, channel, messages, user) {
+  const { threadsCollection } = await connectToMongo();
+  
+  try {
+    const result = await threadsCollection.deleteOne({ _id: threadTs });
+    return {
+      success: result.deletedCount === 1,
+      threadTs,
+      channel,
+      messages,
+      user,
+      result
+    };
+  } catch (error) {
+    console.error("Error deleting thread:", error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
 module.exports = {
   saveThread,
   addReply,
@@ -407,5 +429,6 @@ module.exports = {
   markMessageDeleted,
   refreshThread,
   getThread,
-  threadExists
+  threadExists,
+  deleteThread
 };
