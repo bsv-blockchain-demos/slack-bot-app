@@ -297,7 +297,7 @@ async function refreshThread(threadTs, channelId, messages, userId, client) {
       edited: !!message.edited,
       deleted: false, // We don't know if it was deleted, so assume not
       reactions: message.reactions || [],
-      votes: {upvotes: [], downvotes: []},
+      votes: message.votes,
       raw: {files: message.files || [], thread_ts: message.thread_ts},
     }));
 
