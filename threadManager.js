@@ -15,7 +15,7 @@ const { connectToMongo } = require('./mongo.js');
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function saveThread(threadData, client) {
+async function saveThread(threadData, client, response) {
   const { threadsCollection } = await connectToMongo();
   
   // Get simplified user info for the person who saved the thread (only id and real_name)
@@ -72,7 +72,8 @@ async function saveThread(threadData, client) {
     saved_at: new Date(),
     last_updated: new Date(),
     reactions: parentReactions,
-    messages: formattedMessages
+    messages: formattedMessages,
+    createActionResponse: response,
   };
 
   try {
@@ -247,7 +248,7 @@ async function markMessageDeleted(threadTs, messageTs, client) {
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function refreshThread(threadTs, channelId, messages, userId, client) {
+async function refreshThread(threadTs, channelId, messages, userId, client, response) {
   const { threadsCollection } = await connectToMongo();
   
   try {
@@ -312,7 +313,8 @@ async function refreshThread(threadTs, channelId, messages, userId, client) {
       saved_at: existingThread?.saved_at || new Date(),
       last_updated: new Date(),
       reactions: parentReactions,
-      messages: formattedMessages
+      messages: formattedMessages,
+      createActionResponse: response,
     };
     
     // Always ensure saved_by_info exists
