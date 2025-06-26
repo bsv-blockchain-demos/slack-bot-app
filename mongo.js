@@ -28,11 +28,14 @@ async function connectToMongo() {
       // Initialize database and collections
       db = client.db("slackApp");
       threadsCollection = db.collection("threads");
+      usersCollection = db.collection("users");
       
       // Create indexes for better performance
       await threadsCollection.createIndex({ "_id": 1 }); // Thread ID (thread_ts)
       await threadsCollection.createIndex({ "channel": 1 }); // Channel ID
       await threadsCollection.createIndex({ "saved_by": 1 }); // User who saved
+
+      await usersCollection.createIndex({ id: 1 }, { unique: true });
       
       console.log("MongoDB indexes created successfully");
     } catch (error) {
@@ -40,7 +43,7 @@ async function connectToMongo() {
       throw error;
     }
   }
-  return { db, threadsCollection };
+  return { db, threadsCollection, usersCollection };
 }
 
 // Connect immediately when this module is imported
