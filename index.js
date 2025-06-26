@@ -22,18 +22,18 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
 
     // Get user info
     // Get simplified user info for the person who saved the thread (only id and real_name)
-    const fullSavedByUserInfo = await getUserInfoByID(client, user);
-    const savedByUserInfo = {
-      id: fullSavedByUserInfo.id,
-      real_name: fullSavedByUserInfo.profile?.real_name || fullSavedByUserInfo.real_name || user
+    const fullUserInfo = await getUserInfoByID(client, user);
+    const userInfo = {
+      id: fullUserInfo.id,
+      real_name: fullUserInfo.profile?.real_name || fullUserInfo.real_name || user
     };
     const paymail = text.trim();
 
     // Save the PayMail in the database
     const { usersCollection } = await connectToMongo();
     const result = await usersCollection.updateOne(
-      { id: savedByUserInfo.id }, // use Slack user ID as unique key
-      { $set: { real_name: savedByUserInfo.real_name, paymail } },
+      { id: userInfo.id }, // use Slack user ID as unique key
+      { $set: { real_name: userInfo.real_name, paymail } },
       { upsert: true }
     );
 
