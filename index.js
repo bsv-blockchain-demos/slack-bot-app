@@ -32,7 +32,7 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
     // Save the PayMail in the database
     const { usersCollection } = await connectToMongo();
     const result = await usersCollection.updateOne(
-      { id: userInfo.id }, // use Slack user ID as unique key
+      { _id: userInfo.id }, // use Slack user ID as unique key
       { $set: { real_name: userInfo.real_name, paymail } },
       { upsert: true }
     );
