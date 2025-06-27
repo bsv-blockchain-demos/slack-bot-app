@@ -143,40 +143,40 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       return;
     }
 
-    let response;
-    if (isSaveRequest) {
-      try {
-        const wallet = new WalletClient("auto", "oskarssonslack.slack.com");
+    // let response;
+    // if (isSaveRequest) {
+    //   try {
+    //     const wallet = new WalletClient("auto", "oskarssonslack.slack.com");
 
-        const data = Hash.sha256(Utils.toArray(JSON.stringify(threadInfo), "utf8"));
+    //     const data = Hash.sha256(Utils.toArray(JSON.stringify(threadInfo), "utf8"));
 
-        const lockingScript = new Script();
-        lockingScript.writeBin(data);
-        // OP_DROP
-        lockingScript.writeOpCode(0x75);
+    //     const lockingScript = new Script();
+    //     lockingScript.writeBin(data);
+    //     // OP_DROP
+    //     lockingScript.writeOpCode(0x75);
 
-        response = await wallet.createAction({
-          description: "Slack thread",
-          outputs: [
-            {
-              outputDescription: "Slack thread",
-              lockingScript: lockingScript.toHex(),
-              satoshis: 1,
-              basket: "slack threads",
-            }
-          ]
-        });
-      } catch (error) {
-        console.error("Error saving thread:", error);
-      }
-    }
+    //     response = await wallet.createAction({
+    //       description: "Slack thread",
+    //       outputs: [
+    //         {
+    //           outputDescription: "Slack thread",
+    //           lockingScript: lockingScript.toHex(),
+    //           satoshis: 1,
+    //           basket: "slack threads",
+    //         }
+    //       ]
+    //     });
+    //   } catch (error) {
+    //     console.error("Error saving thread:", error);
+    //   }
+    // }
 
     // Only save to MongoDB if this is a save request (inbox_tray reaction)
     // If it's a refresh request, we'll handle it differently below
     let saveResult;
     if (isSaveRequest) {
       // Pass the client to saveThread to fetch user info
-      saveResult = await saveThread(threadInfo, client, response?.txid);
+      saveResult = await saveThread(threadInfo, client, {/*response?.txid*/});
       console.log(`Thread save result: ${saveResult.success ? 'Success' : 'Failed'}`,
         saveResult.isNew ? '(New thread)' : '(Updated existing thread)');
     }
@@ -199,7 +199,7 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       // TODO: Redeem old tx and make a new tx
 
       // Refresh the thread - pass the client to fetch user info
-      const refreshResult = await refreshThread(threadTs, item.channel, threadResult.messages, user, client, response.txid);
+      const refreshResult = await refreshThread(threadTs, item.channel, threadResult.messages, user, client, {/*response?.txid*/});
       console.log(`🔄 Refreshed thread ${threadTs} from channel ${item.channel}`);
       console.log(`Refresh result: ${refreshResult.success ? 'Success' : 'Failed'}`);
 
