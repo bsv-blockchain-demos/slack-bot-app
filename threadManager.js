@@ -17,6 +17,7 @@ const { connectToMongo } = require('./mongo.js');
  */
 async function saveThread(threadData, client, /*response*/) {
   const { threadsCollection } = await connectToMongo();
+  console.log("Client: ", JSON.stringify(client.team.profile));
   
   // Get simplified user info for the person who saved the thread (only id and real_name)
   const fullSavedByUserInfo = await getUserInfoByID(client, threadData.saved_by || threadData.triggered_by);

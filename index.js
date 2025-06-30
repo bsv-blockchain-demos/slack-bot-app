@@ -145,30 +145,7 @@ app.event("reaction_added", async ({ event, client, logger }) => {
 
     // let response;
     // if (isSaveRequest) {
-    //   try {
-    //     const wallet = new WalletClient("auto", "oskarssonslack.slack.com");
-
-    //     const data = Hash.sha256(Utils.toArray(JSON.stringify(threadInfo), "utf8"));
-
-    //     const lockingScript = new Script();
-    //     lockingScript.writeBin(data);
-    //     // OP_DROP
-    //     lockingScript.writeOpCode(0x75);
-
-    //     response = await wallet.createAction({
-    //       description: "Slack thread",
-    //       outputs: [
-    //         {
-    //           outputDescription: "Slack thread",
-    //           lockingScript: lockingScript.toHex(),
-    //           satoshis: 1,
-    //           basket: "slack threads",
-    //         }
-    //       ]
-    //     });
-    //   } catch (error) {
-    //     console.error("Error saving thread:", error);
-    //   }
+    //   response = await createTransaction(threadInfo);
     // }
 
     // Only save to MongoDB if this is a save request (inbox_tray reaction)
