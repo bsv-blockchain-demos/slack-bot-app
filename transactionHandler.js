@@ -1,26 +1,23 @@
 const { WalletClient } = require("@bsv/sdk");
-const { Hash, Utils } = require("@bsv/sdk");
-const ThreadTemplate = require("./threadTemplate");
+const HashPuzzle = require("./HashPuzzle");
 require("dotenv").config();
 
 async function createTransaction(threadInfo) {
     try {
         const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
 
-        const data = Hash.sha256(Utils.toArray(JSON.stringify(threadInfo), "utf8"));
-
         const response = await wallet.createAction({
             description: "Slack thread",
             outputs: [
                 {
                     outputDescription: "Slack thread",
-                    lockingScript: ThreadTemplate.lock(data).toHex(),
+                    lockingScript: new HashPuzzle().lock(threadInfo).toHex(),
                     satoshis: 1,
                 }
             ]
         });
 
-        broadcastTransaction(response.txid);
+        broadcastTransaction(response);
 
         return response;
     } catch (error) {
@@ -31,9 +28,6 @@ async function createTransaction(threadInfo) {
 async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
     try {
         const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
-        const previousData = Hash.sha256(Utils.toArray(JSON.stringify(oldThreadInfo), "utf8"));
-        const newData = Hash.sha256(Utils.toArray(JSON.stringify(newThreadInfo), "utf8"));
-        
         const tx = getTransaction(txid);
         
         // TODO: implement redeem action
@@ -44,20 +38,20 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
                 {
                     inputDescription: "Slack thread",
                     txid: txid,
-                    unlockingScript: ThreadTemplate.unlock(previousData).toHex(),
+                    unlockingScript: new HashPuzzle().unlock(oldThreadInfo).toHex(),
                     outpoint: tx.outpoints[0],
                 }
             ],
             outputs: [
                 {
                     outputDescription: "Slack thread",
-                    lockingScript: ThreadTemplate.lock(newData).toHex(),
+                    lockingScript: new HashPuzzle().lock(newThreadInfo).toHex(),
                     satoshis: 1,
                 }
             ]
         });
 
-        broadcastTransaction(response.txid);
+        broadcastTransaction(response);
 
         return response;
     } catch (error) {
@@ -65,7 +59,7 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
     }
 }
 
-async function broadcastTransaction(txid) {
+async function broadcastTransaction(tx) {
     try {
         // TODO: implement broadcast transaction to overlay
     } catch (error) {
