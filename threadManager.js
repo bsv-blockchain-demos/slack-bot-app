@@ -265,33 +265,35 @@ async function refreshThread(threadTs, channelId, messages, userId, client, /*re
       console.error(`Error fetching user info for ${userId}:`, error);
     }
     
-    // Get unique user IDs from all messages to fetch their info
-    const userIds = new Set();
-    messages.forEach(message => {
-      if (message.user) userIds.add(message.user);
-    });
+    // // Get unique user IDs from all messages to fetch their info
+    // const userIds = new Set();
+    // messages.forEach(message => {
+    //   if (message.user) userIds.add(message.user);
+    // });
     
-    // Create a map of user IDs to simplified user info objects (only id and real_name)
-    const userInfoMap = new Map();
-    for (const userId of userIds) {
-      try {
-        const userInfo = await getUserInfoByID(client, userId);
-        // Only store the id and real_name from profile
-        userInfoMap.set(userId, {
-          id: userInfo.id,
-          real_name: userInfo.profile?.real_name || userInfo.real_name || userId
-        });
-      } catch (error) {
-        console.error(`Error fetching user info for ${userId}:`, error);
-        // If we can't get user info, we'll still use the ID
-      }
-    }
+    // // Create a map of user IDs to simplified user info objects (only id and real_name)
+    // const userInfoMap = new Map();
+    // for (const userId of userIds) {
+    //   try {
+    //     const userInfo = await getUserInfoByID(client, userId);
+    //     // Only store the id and real_name from profile
+    //     userInfoMap.set(userId, {
+    //       id: userInfo.id,
+    //       real_name: userInfo.profile?.real_name || userInfo.real_name || userId
+    //     });
+    //   } catch (error) {
+    //     console.error(`Error fetching user info for ${userId}:`, error);
+    //     // If we can't get user info, we'll still use the ID
+    //   }
+    // }
     
+    const existingUserInfo = existingThread?.messages?.map(message => message.userInfo);
+
     // Format messages according to our schema
     const formattedMessages = messages.map(message => ({
       ts: message.ts,
       user: message.user,
-      userInfo: userInfoMap.get(message.user) || null,
+      userInfo: existingUserInfo?.find(userInfo => userInfo.id === message.user) || message.userInfo,
       text: message.text || "",
       edited: !!message.edited,
       deleted: false, // We don't know if it was deleted, so assume not
