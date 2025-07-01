@@ -6,6 +6,7 @@ async function createTransaction(threadInfo) {
     try {
         const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
 
+        // Create new transaction
         const response = await wallet.createAction({
             description: "Slack thread",
             outputs: [
@@ -30,7 +31,7 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
         const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
         const tx = getTransaction(txid);
         
-        // TODO: implement redeem action
+        // Use old transaction to make a new one with new info (create chain)
         const response = await wallet.createAction({
             description: "Slack thread",
             inputBEEF: tx.BEEF,
@@ -47,6 +48,33 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
                     outputDescription: "Slack thread",
                     lockingScript: new HashPuzzle().lock(newThreadInfo).toHex(),
                     satoshis: 1,
+                }
+            ]
+        });
+
+        broadcastTransaction(response);
+
+        return response;
+    } catch (error) {
+        console.error("Error spending thread tx:", error);
+    }
+}
+
+async function spendOnly(txid, threadInfo) {
+    try {
+        const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
+        const tx = getTransaction(txid);
+        
+        // Redeem old transaction on thread deletion (end of chain)
+        const response = await wallet.createAction({
+            description: "Slack thread",
+            inputBEEF: tx.BEEF,
+            inputs: [
+                {
+                    inputDescription: "Slack thread",
+                    txid: txid,
+                    unlockingScript: new HashPuzzle().unlock(threadInfo).toHex(),
+                    outpoint: tx.outpoints[0],
                 }
             ]
         });
@@ -78,4 +106,5 @@ function getTransaction(txid) {
 module.exports = {
     createTransaction,
     spendTransaction,
+    spendOnly,
 };
