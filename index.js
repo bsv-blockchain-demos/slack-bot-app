@@ -76,16 +76,13 @@ app.event("reaction_added", async ({ event, client, logger }) => {
     }
 
     // Check if it's part of a thread
-    const threadTs = originalMessage.thread_ts || originalMessage.ts;
+    const threadTs = item.thread_ts || item.ts;
 
     // Fetch entire thread
     const threadResult = await client.conversations.replies({
       channel: item.channel,
       ts: threadTs,
     });
-
-    // Get the original message
-    const originalMessage = threadResult.messages[0];
 
     // Save or process thread
     const threadInfo = {
@@ -95,12 +92,12 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       messages: threadResult.messages,
     };
 
-    const filteredThreadInfo = createFilteredThreadInfo(threadInfo);
-
     if (threadInfo.messages.length === 1) {
       console.log("Thread is empty. Ignoring.");
       return;
     }
+
+    const filteredThreadInfo = createFilteredThreadInfo(threadInfo);
 
     if (isDeleteRequest) {
       const exists = await threadExists(threadTs);
