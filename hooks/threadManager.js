@@ -3,7 +3,7 @@
  * Implements the hybrid strategy for thread management with live updates and manual refresh
  */
 
-const { connectToMongo } = require('./mongo.js');
+const { connectToMongo } = require('../mongo.js');
 
 /**
  * Saves a new thread or updates an existing one
