@@ -150,20 +150,6 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       return;
     }
 
-    // Only save to MongoDB if this is a save request (inbox_tray reaction)
-    // If it's a refresh request, we'll handle it differently below
-    let saveResult;
-    if (isSaveRequest) {
-
-      //const response = await createTransaction(filteredThreadInfo);
-      //console.log("Response: ", response);
-
-      // Pass the client to saveThread to fetch user info
-      saveResult = await saveThread(threadInfo, client, {/*response?.txid*/ });
-      console.log(`Thread save result: ${saveResult.success ? 'Success' : 'Failed'}`,
-        saveResult.isNew ? '(New thread)' : '(Updated existing thread)');
-    }
-
     // If this is a refresh request, handle it differently
     if (isRefreshRequest) {
       // Check if thread exists first
@@ -208,33 +194,44 @@ app.event("reaction_added", async ({ event, client, logger }) => {
     }
 
     // Only continue with save confirmation if this was a save request
-    if (!isSaveRequest) return;
+    if (isSaveRequest) {
 
-    console.log(`✅ Saved thread ${threadTs} from channel ${item.channel}`);
+      //const response = await createTransaction(filteredThreadInfo);
+      //console.log("Response: ", response);
 
-    // Remove reaction and add new checkmark reaction to show that it was saved
-    try {
-      await client.reactions.add({
-        name: "white_check_mark",
-        channel: item.channel,
-        timestamp: item.ts,
-      });
-    } catch (err) {
-      if (err.data?.error === "already_reacted") {
-        console.log("✅ Reaction already added by the bot.");
-      } else {
-        throw err; // rethrow unknown errors
+      // Pass the client to saveThread to fetch user info
+      saveResult = await saveThread(threadInfo, client, {/*response?.txid*/ });
+      console.log(`Thread save result: ${saveResult.success ? 'Success' : 'Failed'}`,
+        saveResult.isNew ? '(New thread)' : '(Updated existing thread)');
+
+      console.log(`✅ Saved thread ${threadTs} from channel ${item.channel}`);
+
+      // Remove reaction and add new checkmark reaction to show that it was saved
+      try {
+        await client.reactions.add({
+          name: "white_check_mark",
+          channel: item.channel,
+          timestamp: item.ts,
+        });
+      } catch (err) {
+        if (err.data?.error === "already_reacted") {
+          console.log("✅ Reaction already added by the bot.");
+        } else {
+          throw err; // rethrow unknown errors
+        }
       }
-    }
 
-    // Send confirmation
-    await client.chat.postEphemeral({
-      channel: item.channel,
-      user: user, // the admin who reacted
-      thread_ts: threadTs,
-      text: "This thread has been saved successfully.",
-      blocks: savedMessageBlock(),
-    });
+      // Send confirmation
+      await client.chat.postEphemeral({
+        channel: item.channel,
+        user: user, // the admin who reacted
+        thread_ts: threadTs,
+        text: "This thread has been saved successfully.",
+        blocks: savedMessageBlock(),
+      });
+
+      return;
+    }
 
   } catch (error) {
     logger.error(error);
