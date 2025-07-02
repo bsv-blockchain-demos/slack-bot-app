@@ -1,4 +1,4 @@
-const { WalletClient } = require("@bsv/sdk");
+const { WalletClient, Transaction, TopicBroadcaster, LookupResolver, Utils, Hash } = require("@bsv/sdk");
 const HashPuzzle = require("./HashPuzzle");
 require("dotenv").config();
 
@@ -29,8 +29,9 @@ async function createTransaction(threadInfo) {
 async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
     try {
         const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
-        const tx = getTransaction(txid);
-        
+        const hash = Hash.sha256(Utils.toArray(JSON.stringify(oldThreadInfo) + randomSecret, "utf8"));
+        const tx = await getTransactionByThreadHash(txid, hash);
+
         // Use old transaction to make a new one with new info (create chain)
         const response = await wallet.createAction({
             description: "Slack thread",
@@ -63,8 +64,8 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
 async function spendOnly(txid, threadInfo) {
     try {
         const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
-        const tx = getTransaction(txid);
-        
+        const tx = await getTransactionByThreadHash(txid);
+
         // Redeem old transaction on thread deletion (end of chain)
         const response = await wallet.createAction({
             description: "Slack thread",
@@ -87,21 +88,40 @@ async function spendOnly(txid, threadInfo) {
     }
 }
 
-async function broadcastTransaction(tx) {
+async function broadcastTransaction(response) {
     try {
         // TODO: implement broadcast transaction to overlay
+        // Capture the resulting transaction
+        const tx = Transaction.fromBEEF(response.tx);
+
+        // Lookup a service which accepts this type of token
+        const overlay = new TopicBroadcaster(['tm_slackthread'])
+
+        // Send the tx to that overlay.
+        const overlayResponse = await tx.broadcast(overlay)
     } catch (error) {
         console.error("Error broadcasting thread tx:", error);
     }
 }
 
-function getTransaction(txid) {
+async function getTransactionByThreadHash(hash) {
     try {
         //TODO get transaction from overlay
+        const overlay = new LookupResolver()
+
+        const response = await overlay.query({
+            service: 'ls_slackthread', query: {
+                threadHash: hash
+            }
+        }, 10000);
+
+        return response;
     } catch (error) {
         console.error("Error getting transaction:", error);
     }
 }
+
+// lockingScript.chunks[1].data = threadHash (num array)
 
 module.exports = {
     createTransaction,
