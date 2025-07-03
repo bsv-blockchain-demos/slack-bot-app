@@ -17,6 +17,14 @@ const app = new App({
   socketMode: true,
 });
 
+function isValidPaymail(paymail) {
+  // Paymail must be in the format localpart@domain.tld
+  // Localpart: letters, digits, dots, underscores, dashes
+  // Domain: letters, digits, dots, dashes
+  const paymailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return paymailRegex.test(paymail);
+}
+
 // New command let users set PayMail value
 app.command("/setpaymail", async ({ ack, body, client }) => {
   try {
@@ -33,6 +41,24 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
 
     // Save the PayMail in the database
     const { usersCollection } = await connectToMongo();
+
+    if (paymail === "" || paymail.toLowerCase() === "none") {
+      await usersCollection.updateOne(
+        { _id: userInfo.id },
+        { $set: { paymail: "" } },
+        { upsert: true }
+      );
+      await ack({
+        text: `PayMail removed for user ${user}`,
+      });
+      return;
+    } else if (!isValidPaymail(paymail)) {
+      await ack({
+        text: `Invalid PayMail format for user ${user}`,
+      });
+      return;
+    }
+
     const result = await usersCollection.updateOne(
       { _id: userInfo.id }, // use Slack user ID as unique key
       { $set: { real_name: userInfo.real_name, paymail } },
