@@ -1,13 +1,14 @@
 const { App } = require("@slack/bolt");
 const { createTransaction, spendTransaction, spendOnly } = require('./hooks/transactionHandler.js');
 const { createFilteredThreadInfo } = require('./hooks/threadFormatting.js');
-const { errorMessageBlock, savedMessageBlock, refreshMessageBlock, deleteMessageBlock } = require('./src/ephemeralMessages.js');
+const { errorMessageBlock, savedMessageBlock, refreshMessageBlock, deleteMessageBlock, paymailSetMessageBlock, paymailRemovedMessageBlock } = require('./src/ephemeralMessages.js');
 require("dotenv").config();
 
 // Import thread management functions
 const { saveThread, addReply, updateEditedMessage, markMessageDeleted, refreshThread, threadExists, deleteThread } = require('./hooks/threadManager.js');
 const { connectToMongo } = require('./mongo.js');
-const { getUserInfoByID, getThread } = require('./hooks/threadManager.js');
+const { getThread } = require('./hooks/threadManager.js');
+const { getUserInfoByID } = require('./hooks/threadManager.js');
 
 // Initialize the app with proper configuration
 const app = new App({
@@ -28,14 +29,14 @@ function isValidPaymail(paymail) {
 // New command let users set PayMail value
 app.command("/setpaymail", async ({ ack, body, client }) => {
   try {
-    const { user, text } = body;
+    const { user_id, text } = body;
 
     // Get user info
     // Get simplified user info for the person who saved the thread (only id and real_name)
-    const fullUserInfo = await getUserInfoByID(client, user);
+    const fullUserInfo = await getUserInfoByID(client, user_id);
     const userInfo = {
       id: fullUserInfo.id,
-      real_name: fullUserInfo.profile?.real_name || fullUserInfo.real_name || user
+      real_name: fullUserInfo.profile?.real_name || fullUserInfo.real_name || user_id
     };
     const paymail = text.trim();
 
@@ -49,12 +50,14 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
         { upsert: true }
       );
       await ack({
-        text: `PayMail removed for user ${user}`,
+        text: `PayMail removed for user ${userInfo.real_name}`,
+        blocks: paymailRemovedMessageBlock(`PayMail removed for user ${userInfo.real_name}`),
       });
       return;
     } else if (!isValidPaymail(paymail)) {
       await ack({
-        text: `Invalid PayMail format for user ${user}`,
+        text: `Invalid PayMail format for user ${userInfo.real_name}`,
+        blocks: errorMessageBlock(`Invalid PayMail format for user ${userInfo.real_name}`),
       });
       return;
     }
@@ -69,13 +72,15 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
 
     await ack({
       text: `PayMail set to ${paymail}`,
+      blocks: paymailSetMessageBlock(`PayMail set to ${paymail}`),
     });
 
-    console.log(`PayMail set for user ${user}: ${paymail}`);
+    console.log(`PayMail set for user ${userInfo.real_name}: ${paymail}`);
   } catch (error) {
     console.error("Error setting PayMail:", error);
     await ack({
       text: "Error setting PayMail. Please try again.",
+      blocks: errorMessageBlock(`Error setting PayMail. Please try again.`),
     });
   }
 });

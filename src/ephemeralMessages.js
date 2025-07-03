@@ -86,9 +86,55 @@ function errorMessageBlock(error) {
     ];
 }
 
+function paymailSetMessageBlock() {
+    return [
+        {
+            type: "section",
+            text: {
+                type: "mrkdwn",
+                text: `✅ Paymail set successfully.`,
+            },
+            accessory: {
+                type: "button",
+                text: {
+                    type: "plain_text",
+                    text: "❌ Dismiss",
+                    emoji: true,
+                },
+                value: "dismiss_message",
+                action_id: "dismiss_success",
+            },
+        },
+    ];
+}
+
+function paymailRemovedMessageBlock() {
+    return [
+        {
+            type: "section",
+            text: {
+                type: "mrkdwn",
+                text: `🗑 Paymail removed successfully.`,
+            },
+            accessory: {
+                type: "button",
+                text: {
+                    type: "plain_text",
+                    text: "❌ Dismiss",
+                    emoji: true,
+                },
+                value: "dismiss_message",
+                action_id: "dismiss_success",
+            },
+        },
+    ];
+}
+
 module.exports = {
     refreshMessageBlock,
     deleteMessageBlock,
     savedMessageBlock,
     errorMessageBlock,
+    paymailSetMessageBlock,
+    paymailRemovedMessageBlock,
 }

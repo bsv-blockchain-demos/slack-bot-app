@@ -438,5 +438,6 @@ module.exports = {
   refreshThread,
   getThread,
   threadExists,
-  deleteThread
+  deleteThread,
+  getUserInfoByID
 };
