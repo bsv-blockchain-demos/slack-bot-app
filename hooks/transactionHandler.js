@@ -99,6 +99,7 @@ async function broadcastTransaction(response) {
 
         // Send the tx to that overlay.
         const overlayResponse = await tx.broadcast(overlay)
+        console.log("Overlay response: ", overlayResponse);
     } catch (error) {
         console.error("Error broadcasting thread tx:", error);
     }
@@ -120,8 +121,6 @@ async function getTransactionByThreadHash(hash) {
         console.error("Error getting transaction:", error);
     }
 }
-
-// lockingScript.chunks[1].data = threadHash (num array)
 
 module.exports = {
     createTransaction,

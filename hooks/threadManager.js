@@ -15,7 +15,7 @@ const { connectToMongo } = require('../mongo.js');
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function saveThread(threadData, client, /*txid*/) {
+async function saveThread(threadData, client, txid) {
   const { threadsCollection } = await connectToMongo();
   console.log("Client: ", JSON.stringify(client.team.profile));
   
@@ -73,7 +73,7 @@ async function saveThread(threadData, client, /*txid*/) {
     last_updated: new Date(),
     reactions: parentReactions,
     messages: formattedMessages,
-    //txid: txid,
+    txid: txid,
   };
 
   try {
@@ -106,7 +106,7 @@ async function saveThread(threadData, client, /*txid*/) {
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function addReply(threadTs, message, client, /*txid*/) {
+async function addReply(threadTs, message, client, txid) {
   const { threadsCollection } = await connectToMongo();
   
   // Get simplified user info for the message author (only id and real_name)
@@ -146,7 +146,7 @@ async function addReply(threadTs, message, client, /*txid*/) {
         },
         $set: {
           last_updated: new Date(),
-          //txid: txid,
+          txid: txid,
         }
       }
     );
@@ -185,7 +185,7 @@ async function updateEditedMessage(threadTs, messageTs, newText, rawMessage, txi
           "messages.$.edited": true,
           "messages.$.raw": rawMessage,
           "last_updated": new Date(),
-          //txid: txid,
+          txid: txid,
         }
       }
     );
@@ -212,7 +212,7 @@ async function updateEditedMessage(threadTs, messageTs, newText, rawMessage, txi
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function markMessageDeleted(threadTs, messageTs, client, /*txid*/) {
+async function markMessageDeleted(threadTs, messageTs, client, txid) {
   const { threadsCollection } = await connectToMongo();
   
   try {
@@ -223,7 +223,7 @@ async function markMessageDeleted(threadTs, messageTs, client, /*txid*/) {
           "messages.$.text": "[deleted]",
           "messages.$.deleted": true,
           "last_updated": new Date(),
-          //txid: txid,
+          txid: txid,
         }
       }
     );
@@ -251,7 +251,7 @@ async function markMessageDeleted(threadTs, messageTs, client, /*txid*/) {
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function refreshThread(threadTs, channelId, messages, userId, client, /*txid*/) {
+async function refreshThread(threadTs, channelId, messages, userId, client, txid) {
   const { threadsCollection } = await connectToMongo();
   
   try {
@@ -318,7 +318,7 @@ async function refreshThread(threadTs, channelId, messages, userId, client, /*tx
       last_updated: new Date(),
       reactions: parentReactions,
       messages: formattedMessages,
-      //txid: txid,
+      txid: txid,
     };
     
     // Always ensure saved_by_info exists

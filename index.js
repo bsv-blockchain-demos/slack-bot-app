@@ -204,11 +204,11 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages });
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
-      //const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
-      //console.log("Response: ", response);
+      const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
+      console.log("Response: ", response);
 
       // Refresh the thread - pass the client to fetch user info
-      const refreshResult = await refreshThread(threadTs, item.channel, threadResult.messages, user, client, {/*response?.txid*/ });
+      const refreshResult = await refreshThread(threadTs, item.channel, threadResult.messages, user, client, response?.txid);
       console.log(`🔄 Refreshed thread ${threadTs} from channel ${item.channel}`);
       console.log(`Refresh result: ${refreshResult.success ? 'Success' : 'Failed'}`);
 
@@ -227,11 +227,11 @@ app.event("reaction_added", async ({ event, client, logger }) => {
     // Only continue with save confirmation if this was a save request
     if (isSaveRequest) {
 
-      //const response = await createTransaction(filteredThreadInfo);
-      //console.log("Response: ", response);
+      const response = await createTransaction(filteredThreadInfo);
+      console.log("Response: ", response);
 
       // Pass the client to saveThread to fetch user info
-      saveResult = await saveThread(threadInfo, client, {/*response?.txid*/ });
+      saveResult = await saveThread(threadInfo, client, response?.txid);
       console.log(`Thread save result: ${saveResult.success ? 'Success' : 'Failed'}`,
         saveResult.isNew ? '(New thread)' : '(Updated existing thread)');
 
@@ -343,8 +343,8 @@ app.event("message", async ({ event, client, logger }) => {
       const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages });
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
-      //const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
-      //console.log("Response: ", response);
+      const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
+      console.log("Response: ", response);
 
       // Update the edited message in the database
       const updateResult = await updateEditedMessage(
@@ -352,7 +352,7 @@ app.event("message", async ({ event, client, logger }) => {
         originalTs,
         event.message.text,
         event.message,
-        //response?.txid,
+        response?.txid,
       );
 
       console.log(`Message edit saved: ${updateResult.success ? 'Success' : 'Failed'}`);
@@ -415,11 +415,11 @@ app.event("message", async ({ event, client, logger }) => {
 
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
-      //const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
+      const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredNewThreadInfo);
+      console.log("Response: ", response);
 
       // Mark the message as deleted in the database
-      //console.log("Response: ", response);
-      const deleteResult = await markMessageDeleted(threadTs, deletedTs, client, /*response?.txid*/);
+      const deleteResult = await markMessageDeleted(threadTs, deletedTs, client, response?.txid);
       console.log(`Message deletion marked: ${deleteResult.success ? 'Success' : 'Failed'}`);
     }
 
@@ -440,11 +440,11 @@ app.event("message", async ({ event, client, logger }) => {
       const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages });
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
-      //const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredNewThreadInfo);
+      const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredNewThreadInfo);
+      console.log("Response: ", response);
 
       // Add the reply to the thread in the database - pass client to fetch user info
-      //console.log("Response: ", response);
-      const addResult = await addReply(threadTs, event, client, /*response?.txid*/);
+      const addResult = await addReply(threadTs, event, client, response?.txid);
       console.log(`Reply saved: ${addResult.success ? 'Success' : 'Failed'}`);
     }
   } catch (error) {
