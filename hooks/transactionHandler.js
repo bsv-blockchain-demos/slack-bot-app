@@ -2,6 +2,8 @@ const { WalletClient, Transaction, TopicBroadcaster, LookupResolver, Utils, Hash
 const HashPuzzle = require("./HashPuzzle");
 require("dotenv").config();
 
+const randomSecret = process.env.RANDOM_SECRET;
+
 async function createTransaction(threadInfo) {
     try {
         const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
