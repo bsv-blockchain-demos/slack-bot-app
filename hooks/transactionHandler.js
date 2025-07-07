@@ -4,6 +4,13 @@ require("dotenv").config();
 
 const randomSecret = process.env.RANDOM_SECRET;
 
+const overlay = new LookupResolver({
+    slapTrackers: ['https://overlay-us-1.bsvb.tech'],
+    additionalHosts: {
+        'ls_slackthread': ['https://overlay-us-1.bsvb.tech']
+    }
+})
+
 async function createTransaction(threadInfo) {
     try {
         const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
@@ -97,10 +104,15 @@ async function broadcastTransaction(response) {
         const tx = Transaction.fromBEEF(response.tx);
 
         // Lookup a service which accepts this type of token
-        const overlay = new TopicBroadcaster(['tm_slackthread'])
+        const tb = new TopicBroadcaster(['tm_slackthread'], {
+            resolver: overlay,
+            requireAcknowledgmentFromSpecificHostsForTopics: {
+              'ls_slackthread': ['https://overlay-us-1.bsvb.tech']
+            }
+          })
 
         // Send the tx to that overlay.
-        const overlayResponse = await tx.broadcast(overlay)
+        const overlayResponse = await tx.broadcast(tb)
         console.log("Overlay response: ", overlayResponse);
     } catch (error) {
         console.error("Error broadcasting thread tx:", error);
@@ -110,8 +122,6 @@ async function broadcastTransaction(response) {
 async function getTransactionByThreadHash(hash) {
     try {
         //TODO get transaction from overlay
-        const overlay = new LookupResolver()
-
         const response = await overlay.query({
             service: 'ls_slackthread', query: {
                 threadHash: hash

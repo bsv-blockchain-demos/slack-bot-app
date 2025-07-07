@@ -53,12 +53,14 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
         text: `PayMail removed for user ${userInfo.real_name}`,
         blocks: paymailRemovedMessageBlock(`PayMail removed for user ${userInfo.real_name}`),
       });
+      console.log(`PayMail removed for user ${userInfo.real_name}`);
       return;
     } else if (!isValidPaymail(paymail)) {
       await ack({
         text: `Invalid PayMail format for user ${userInfo.real_name}`,
         blocks: errorMessageBlock(`Invalid PayMail format for user ${userInfo.real_name}`),
       });
+      console.log(`Invalid PayMail format for user ${userInfo.real_name}`);
       return;
     }
 
