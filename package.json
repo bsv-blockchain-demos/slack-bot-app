@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "@bsv/sdk": "^1.6.5",
+    "@bsv/wallet-toolbox": "^1.5.9",
     "@slack/bolt": "^4.4.0",
     "dotenv": "^16.5.0",
     "mongodb": "^6.17.0"
