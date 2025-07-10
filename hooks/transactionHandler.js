@@ -42,8 +42,8 @@ async function createTransaction(threadInfo) {
 async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
     try {
         const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
-        const hash = Hash.sha256(Utils.toArray(JSON.stringify(oldThreadInfo) + randomSecret, "utf8"));
-        const oldThreadTx = await getTransactionByThreadHash(txid, hash);
+        const hash = Hash.hash256(Utils.toArray(JSON.stringify(oldThreadInfo) + randomSecret, "utf8"));
+        const oldThreadTx = await getTransactionByThreadHash(hash);
 
         // Use old transaction to make a new one with new info (create chain)
         const response = await wallet.createAction({
@@ -77,7 +77,8 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
 // async function spendOnly(txid, threadInfo) {
 //     try {
 //         const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
-//         const oldThreadTx = await getTransactionByThreadHash(txid);
+//         const hash = Hash.hash256(Utils.toArray(JSON.stringify(threadInfo) + randomSecret, "utf8"));
+//         const oldThreadTx = await getTransactionByThreadHash(hash);
 
 //         // // Redeem old transaction on thread deletion (end of chain)
 //         // const response = await wallet.createAction({
