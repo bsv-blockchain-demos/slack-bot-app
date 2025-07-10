@@ -100,6 +100,12 @@ app.event("reaction_added", async ({ event, client, logger }) => {
     const isRefreshRequest = reaction === "arrows_counterclockwise";
     const isDeleteRequest = reaction === "wastebasket";
 
+    const exists = await threadExists(threadTs);
+    if (isSaveRequest && exists) {
+      console.log("Thread already exists. Ignoring.");
+      return;
+    }
+
     console.log("Item: ", item);
 
     // Optional: check if the user is an admin
@@ -123,6 +129,7 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       thread_ts: threadTs,
       channel: item.channel,
       saved_by: user,
+      last_updated: item.ts,
       messages: threadResult.messages,
     };
 
@@ -153,11 +160,11 @@ app.event("reaction_added", async ({ event, client, logger }) => {
 
       // Get old thread info from db
       // Format to satisfy transaction requirements
-      const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages });
+      const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages, last_updated: oldThreadInfo.last_updated });
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
-      //const response = await spendOnly(oldThreadInfo.txid, filteredOldThreadInfo);
-      //console.log("Response: ", response);
+      // const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
+      // console.log("Response: ", response);
 
       // Delete the thread - pass the client to fetch user info
       const deleteResult = await deleteThread(threadTs, item.channel, threadResult.messages, user);
@@ -203,7 +210,7 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       // Format to satisfy transaction requirements
       const oldThreadInfo = await getThread(threadTs);
 
-      const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages });
+      const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages, last_updated: oldThreadInfo.last_updated });
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
       const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
@@ -333,6 +340,7 @@ app.event("message", async ({ event, client, logger }) => {
         thread_ts: threadTs,
         channel: event.channel,
         saved_by: user,
+        last_updated: event.ts,
         messages: filteredNewThreadMessages,
       };
 
@@ -342,10 +350,10 @@ app.event("message", async ({ event, client, logger }) => {
       // Format to satisfy transaction requirements
       const oldThreadInfo = await getThread(threadTs);
 
-      const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages });
+      const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages, last_updated: oldThreadInfo.last_updated });
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
-      const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
+      const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredNewThreadInfo);
       console.log("Response: ", response);
 
       // Update the edited message in the database
@@ -386,6 +394,7 @@ app.event("message", async ({ event, client, logger }) => {
         thread_ts: threadTs,
         channel: event.channel,
         saved_by: user,
+        last_updated: event.ts,
         messages: filteredNewThreadMessages,
       };
 
@@ -412,6 +421,7 @@ app.event("message", async ({ event, client, logger }) => {
         thread_ts: threadTs,
         channel: event.channel,
         saved_by: oldThreadInfo.saved_by,
+        last_updated: oldThreadInfo.last_updated,
         messages: oldThreadMessages,
       };
 
@@ -432,14 +442,14 @@ app.event("message", async ({ event, client, logger }) => {
 
       // Create a new array of messages with the reply
       // Format to satisfy transaction requirements
-      const filteredNewThreadInfo = createFilteredThreadInfo({ thread_ts: threadTs, channel: event.channel, saved_by: user, messages: newThreadResult.messages });
+      const filteredNewThreadInfo = createFilteredThreadInfo({ thread_ts: threadTs, channel: event.channel, saved_by: user, messages: newThreadResult.messages, last_updated: event.ts });
       console.log("Filtered new thread info: ", filteredNewThreadInfo);
 
       const oldThreadInfo = await getThread(threadTs);
 
       // Get old thread info from db
       // Format to satisfy transaction requirements
-      const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages });
+      const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages, last_updated: oldThreadInfo.last_updated });
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
       const response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredNewThreadInfo);
