@@ -1,4 +1,4 @@
-const { WalletClient, Transaction, TopicBroadcaster, LookupResolver, Utils, Hash } = require("@bsv/sdk");
+const { Transaction, TopicBroadcaster, LookupResolver, Utils, Hash } = require("@bsv/sdk");
 const HashPuzzle = require("./HashPuzzle");
 require("dotenv").config();
 
@@ -13,23 +13,41 @@ const overlay = new LookupResolver({
 
 async function createTransaction(threadInfo) {
     try {
-        const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
+        // const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
 
-        // Create new transaction
-        const response = await wallet.createAction({
-            description: "Slack thread",
-            outputs: [
-                {
-                    outputDescription: "Slack thread",
-                    lockingScript: new HashPuzzle().lock(threadInfo).toHex(),
-                    satoshis: 1,
-                }
-            ]
+        // // Create new transaction
+        // const response = await wallet.createAction({
+        //     description: "Slack thread",
+        //     outputs: [
+        //         {
+        //             outputDescription: "Slack thread",
+        //             lockingScript: new HashPuzzle().lock(threadInfo),
+        //             satoshis: 1,
+        //         }
+        //     ]
+        // });
+
+        
+        const tx = new Transaction();
+        tx.addInput({
+            sourceTransaction: sourceTX, // Need to get from server
+            sourceTXID: txid,
+            sourceOutputIndex: 0,
+            unlockingScript: unlockScript, // Need to get from server private key (?)
+        });
+        tx.addOutput({
+            lockingScript: new HashPuzzle().lock(threadInfo),
+            satoshis: 1,
+            change: true,
         });
 
-        broadcastTransaction(response);
+        tx.fee();
+        tx.sign();
+        tx.verify('scripts only');
 
-        return response;
+        broadcastTransaction(tx);
+
+        return tx;
     } catch (error) {
         console.error("Error creating transaction:", error);
     }
@@ -37,69 +55,98 @@ async function createTransaction(threadInfo) {
 
 async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
     try {
-        const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
+        // const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
         const hash = Hash.sha256(Utils.toArray(JSON.stringify(oldThreadInfo) + randomSecret, "utf8"));
-        const tx = await getTransactionByThreadHash(txid, hash);
+        const oldThreadTx = await getTransactionByThreadHash(txid, hash);
 
-        // Use old transaction to make a new one with new info (create chain)
-        const response = await wallet.createAction({
-            description: "Slack thread",
-            inputBEEF: tx.BEEF,
-            inputs: [
-                {
-                    inputDescription: "Slack thread",
-                    txid: txid,
-                    unlockingScript: new HashPuzzle().unlock(oldThreadInfo).toHex(),
-                    outpoint: tx.outpoints[0],
-                }
-            ],
-            outputs: [
-                {
-                    outputDescription: "Slack thread",
-                    lockingScript: new HashPuzzle().lock(newThreadInfo).toHex(),
-                    satoshis: 1,
-                }
-            ]
+        // // Use old transaction to make a new one with new info (create chain)
+        // const response = await wallet.createAction({
+        //     description: "Slack thread",
+        //     inputBEEF: tx.BEEF,
+        //     inputs: [
+        //         {
+        //             inputDescription: "Slack thread",
+        //             txid: txid,
+        //             unlockingScript: new HashPuzzle().unlock(oldThreadInfo),
+        //             outpoint: tx.outpoints[0],
+        //         }
+        //     ],
+        //     outputs: [
+        //         {
+        //             outputDescription: "Slack thread",
+        //             lockingScript: new HashPuzzle().lock(newThreadInfo),
+        //             satoshis: 1,
+        //         }
+        //     ]
+        // });
+
+        const tx = new Transaction();
+        tx.addInput({
+            sourceTransaction: oldThreadTx.BEEF,
+            sourceTXID: txid,
+            sourceOutputIndex: 0,
+            unlockingScript: new HashPuzzle().unlock(oldThreadInfo),
+        });
+        tx.addOutput({
+            lockingScript: new HashPuzzle().lock(newThreadInfo),
+            satoshis: 1,
+            change: true,
         });
 
-        broadcastTransaction(response);
+        tx.fee();
+        tx.sign();
+        tx.verify('scripts only');
 
-        return response;
+        broadcastTransaction(tx);
+
+        return tx;
     } catch (error) {
         console.error("Error spending thread tx:", error);
     }
 }
 
-async function spendOnly(txid, threadInfo) {
-    try {
-        const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
-        const tx = await getTransactionByThreadHash(txid);
+// async function spendOnly(txid, threadInfo) {
+//     try {
+//         //const wallet = new WalletClient("auto", process.env.SLACK_WORKSPACE);
+//         const oldThreadTx = await getTransactionByThreadHash(txid);
 
-        // Redeem old transaction on thread deletion (end of chain)
-        const response = await wallet.createAction({
-            description: "Slack thread",
-            inputBEEF: tx.BEEF,
-            inputs: [
-                {
-                    inputDescription: "Slack thread",
-                    txid: txid,
-                    unlockingScript: new HashPuzzle().unlock(threadInfo).toHex(),
-                    outpoint: tx.outpoints[0],
-                }
-            ]
-        });
+//         // // Redeem old transaction on thread deletion (end of chain)
+//         // const response = await wallet.createAction({
+//         //     description: "Slack thread",
+//         //     inputBEEF: tx.BEEF,
+//         //     inputs: [
+//         //         {
+//         //             inputDescription: "Slack thread",
+//         //             txid: txid,
+//         //             unlockingScript: new HashPuzzle().unlock(threadInfo),
+//         //             outpoint: tx.outpoints[0],
+//         //         }
+//         //     ]
+//         // });
 
-        broadcastTransaction(response);
+//         const tx = new Transaction();
+//         tx.addInput({
+//             sourceTransaction: oldThreadTx.BEEF,
+//             sourceTXID: txid,
+//             sourceOutputIndex: 0,
+//             unlockingScript: new HashPuzzle().unlock(threadInfo),
+//         });
 
-        return response;
-    } catch (error) {
-        console.error("Error spending thread tx:", error);
-    }
-}
+//         tx.fee();
+//         tx.sign();
+//         tx.verify('scripts only');
+
+//         broadcastTransaction(tx);
+
+//         return tx;
+//     } catch (error) {
+//         console.error("Error spending thread tx:", error);
+//     }
+// }
 
 async function broadcastTransaction(response) {
     try {
-        // TODO: implement broadcast transaction to overlay
+        // broadcast transaction to overlay
         // Capture the resulting transaction
         const tx = Transaction.fromBEEF(response.tx);
 
@@ -121,7 +168,7 @@ async function broadcastTransaction(response) {
 
 async function getTransactionByThreadHash(hash) {
     try {
-        //TODO get transaction from overlay
+        // get transaction from overlay
         const response = await overlay.query({
             service: 'ls_slackthread', query: {
                 threadHash: hash
@@ -137,5 +184,5 @@ async function getTransactionByThreadHash(hash) {
 module.exports = {
     createTransaction,
     spendTransaction,
-    spendOnly,
+    //spendOnly,
 };
