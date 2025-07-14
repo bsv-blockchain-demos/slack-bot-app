@@ -1,4 +1,4 @@
-const { Transaction, TopicBroadcaster, LookupResolver, Utils, Hash } = require("@bsv/sdk");
+const { Transaction, TopicBroadcaster, LookupResolver, Utils, Hash, WalletClient } = require("@bsv/sdk");
 const { makeWallet } = require("./createWallet");
 const HashPuzzle = require("./HashPuzzle");
 require("dotenv").config();
@@ -17,15 +17,16 @@ const overlay = new LookupResolver({
 
 async function createTransaction(threadInfo) {
     try {
-        const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
+        //const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
 
+        const wallet = new WalletClient("auto", "localhost:8080");
         // Create new transaction
         const response = await wallet.createAction({
             description: "Slack thread",
             outputs: [
                 {
                     outputDescription: "Slack thread",
-                    lockingScript: new HashPuzzle().lock(threadInfo),
+                    lockingScript: new HashPuzzle().lock(threadInfo).toHex(),
                     satoshis: 1,
                 }
             ]
@@ -53,14 +54,14 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
                 {
                     inputDescription: "Slack thread",
                     txid: txid,
-                    unlockingScript: new HashPuzzle().unlock(oldThreadInfo),
+                    unlockingScript: new HashPuzzle().unlock(oldThreadInfo).toHex(),
                     outpoint: oldThreadTx.outpoints[0],
                 }
             ],
             outputs: [
                 {
                     outputDescription: "Slack thread",
-                    lockingScript: new HashPuzzle().lock(newThreadInfo),
+                    lockingScript: new HashPuzzle().lock(newThreadInfo).toHex(),
                     satoshis: 1,
                 }
             ]
