@@ -17,9 +17,8 @@ const overlay = new LookupResolver({
 
 async function createTransaction(threadInfo) {
     try {
-        //const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
+        const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
 
-        const wallet = new WalletClient("auto", "localhost:8080");
         // Create new transaction
         const response = await wallet.createAction({
             description: "Slack thread",
