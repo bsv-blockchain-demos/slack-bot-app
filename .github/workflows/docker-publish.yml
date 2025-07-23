@@ -2,12 +2,36 @@ name: Build and Push to GHCR
 
 on:
   push:
+    tags:
+      - "v*"
+    branches:
+      - main
+  pull_request:
     branches:
       - main
   workflow_dispatch:
 
 jobs:
+  get_tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine deployment tag
+        id: deployment_tag
+        run: |
+          if [[ '${{ github.ref_type }}' == 'tag' ]]; then
+            export tag=${{ github.ref_name }}
+            echo "version tag is $tag"
+            echo "id=$tag" >> $GITHUB_OUTPUT
+          else
+            export tag=latest
+            echo "version tag is $tag"
+            echo "id=$tag" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      deployment_tag: ${{ steps.deployment_tag.outputs.id }}
+
   build-and-push:
+    needs: [ get_tag ]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,9 +49,10 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}:latest .
+          docker build -t ghcr.io/${{ github.repository }}:{{ github.sha }} .
+          docker build -t ghcr.io/${{ github.repository }}:{{ needs.get_tag.outputs.deployment_tag }} .
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository }}:latest
-
+          docker push ghcr.io/${{ github.repository }}:{{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}:{{ needs.get_tag.outputs.deployment_tag }}
