@@ -1,7 +1,15 @@
 const { App } = require("@slack/bolt");
 const { createTransaction, spendTransaction, spendOnly } = require('./hooks/transactionHandler.js');
 const { createFilteredThreadInfo } = require('./hooks/threadFormatting.js');
-const { errorMessageBlock, savedMessageBlock, refreshMessageBlock, deleteMessageBlock, paymailSetMessageBlock, paymailRemovedMessageBlock } = require('./src/ephemeralMessages.js');
+const {
+  errorMessageBlock,
+  savedMessageBlock,
+  refreshMessageBlock,
+  deleteMessageBlock,
+  paymailSetMessageBlock,
+  paymailRemovedMessageBlock,
+  usernameSetMessageBlock
+} = require('./src/ephemeralMessages.js');
 const { handleMessageEvent } = require('./src/messageEventHandler.js');
 const { getThreadQueue, _threadQueues } = require('./utils/ActionQueue.js');
 require("dotenv").config();
@@ -32,7 +40,7 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
     const { user_id, text } = body;
 
     // Get user info
-    // Get simplified user info for the person who saved the thread (only id and real_name)
+    // Get simplified user info (only id and real_name)
     const fullUserInfo = await getUserInfoByID(client, user_id);
     const userInfo = {
       id: fullUserInfo.id,
@@ -70,7 +78,14 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
       { upsert: true }
     );
 
-    console.log('result: ', result);
+    if (!result.acknowledged) {
+      await ack({
+        text: "Error setting PayMail. Please try again.",
+        blocks: errorMessageBlock(`Error setting PayMail. Please try again.`),
+      });
+      console.log(`Error setting PayMail for user ${userInfo.real_name}`);
+      return;
+    }
 
     await ack({
       text: `PayMail set to ${paymail}`,
@@ -83,6 +98,57 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
     await ack({
       text: "Error setting PayMail. Please try again.",
       blocks: errorMessageBlock(`Error setting PayMail. Please try again.`),
+    });
+  }
+});
+
+app.command("/setusername", async ({ ack, body, client }) => {
+  try {
+    const { user_id, text } = body;
+
+    const fullUserInfo = await getUserInfoByID(client, user_id);
+    const userInfo = {
+      id: fullUserInfo.id,
+      real_name: fullUserInfo.profile?.real_name || fullUserInfo.real_name || user_id
+    };
+
+    if (text.trim().length < 1) {
+      await ack({
+        text: `Username cannot be empty`,
+        blocks: errorMessageBlock(`Username cannot be empty`),
+      });
+      console.log(`Username cannot be empty for user ${userInfo.real_name}`);
+      return;
+    }
+
+    const { usersCollection } = await connectToMongo();
+
+    const result = await usersCollection.updateOne(
+      { _id: userInfo.id }, // use Slack user ID as unique key
+      { $set: { username: text.trim() } },
+      { upsert: true }
+    );
+
+    if (!result.acknowledged) {
+      await ack({
+        text: "Error setting username. Please try again.",
+        blocks: errorMessageBlock(`Error setting username. Please try again.`),
+      });
+      console.log(`Error setting username for user ${userInfo.real_name}`);
+      return;
+    }
+
+    await ack({
+      text: `Username set to ${text.trim()}`,
+      blocks: usernameSetMessageBlock(`Username set to ${text.trim()}`),
+    });
+
+    console.log(`Username set for user ${userInfo.real_name} to: ${text.trim()}`);
+  } catch (error) {
+    console.error("Error setting username:", error);
+    await ack({
+      text: "Error setting username. Please try again.",
+      blocks: errorMessageBlock(`Error setting username. Please try again.`),
     });
   }
 });
