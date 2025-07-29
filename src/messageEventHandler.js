@@ -19,6 +19,7 @@ async function handleMessageEvent(event, client, logger, threadTs) {
 
     // Initialize response for transactions
     let response;
+    const last_updated = new Date();
     
     try {
         // Fetch entire thread
@@ -56,7 +57,7 @@ async function handleMessageEvent(event, client, logger, threadTs) {
                 thread_ts: threadTs,
                 channel: event.channel,
                 saved_by: user,
-                last_updated: event.ts,
+                last_updated: last_updated,
                 messages: filteredNewThreadMessages,
             };
 
@@ -94,6 +95,7 @@ async function handleMessageEvent(event, client, logger, threadTs) {
                 event.message.text,
                 event.message,
                 response?.txid,
+                last_updated
             );
 
             console.log(`Message edit saved: ${updateResult.success ? 'Success' : 'Failed'}`);
@@ -125,7 +127,7 @@ async function handleMessageEvent(event, client, logger, threadTs) {
                 thread_ts: threadTs,
                 channel: event.channel,
                 saved_by: event.previous_message.user,
-                last_updated: event.ts,
+                last_updated: last_updated,
                 messages: filteredNewThreadMessages,
             };
 
@@ -177,7 +179,7 @@ async function handleMessageEvent(event, client, logger, threadTs) {
             }
 
             // Mark the message as deleted in the database
-            const deleteResult = await markMessageDeleted(threadTs, deletedTs, client, response?.txid);
+            const deleteResult = await markMessageDeleted(threadTs, deletedTs, client, response?.txid, last_updated);
             console.log(`Message deletion marked: ${deleteResult.success ? 'Success' : 'Failed'}`);
         }
 
@@ -188,7 +190,7 @@ async function handleMessageEvent(event, client, logger, threadTs) {
 
             // Create a new array of messages with the reply
             // Format to satisfy transaction requirements
-            const filteredNewThreadInfo = createFilteredThreadInfo({ thread_ts: threadTs, channel: event.channel, saved_by: user, messages: newThreadResult.messages, last_updated: event.ts });
+            const filteredNewThreadInfo = createFilteredThreadInfo({ thread_ts: threadTs, channel: event.channel, saved_by: user, messages: newThreadResult.messages, last_updated: last_updated });
             console.log("Filtered new thread info: ", filteredNewThreadInfo);
 
             const oldThreadInfo = await getThread(threadTs);
@@ -217,7 +219,7 @@ async function handleMessageEvent(event, client, logger, threadTs) {
             }
 
             // Add the reply to the thread in the database - pass client to fetch user info
-            const addResult = await addReply(threadTs, event, client, response?.txid);
+            const addResult = await addReply(threadTs, event, client, response?.txid, last_updated);
             console.log(`Reply saved: ${addResult.success ? 'Success' : 'Failed'}`);
         }
     } catch (error) {

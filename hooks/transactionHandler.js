@@ -74,33 +74,33 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
     }
 }
 
-// async function spendOnly(txid, threadInfo) {
-//     try {
-//         const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
-//         const hash = Hash.hash256(Utils.toArray(JSON.stringify(threadInfo) + randomSecret, "utf8"));
-//         const oldThreadTx = await getTransactionByThreadHash(hash);
+async function createUnspendableTransaction(txid, oldThreadInfo) {
+    try {
+        const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
+        const hash = Hash.hash256(Utils.toArray(JSON.stringify(oldThreadInfo) + randomSecret, "utf8"));
+        const oldThreadTx = await getTransactionByThreadHash(hash);
 
-//         // // Redeem old transaction on thread deletion (end of chain)
-//         // const response = await wallet.createAction({
-//         //     description: "Slack thread",
-//         //     inputBEEF: oldThreadTx.BEEF,
-//         //     inputs: [
-//         //         {
-//         //             inputDescription: "Slack thread",
-//         //             txid: txid,
-//         //             unlockingScript: new HashPuzzle().unlock(threadInfo),
-//         //             outpoint: oldThreadTx.outpoints[0],
-//         //         }
-//         //     ]
-//         // });
+        // Leave output empty to create unspendable transaction on thread delete
+        const response = await wallet.createAction({
+            description: "Slack thread",
+            inputBEEF: oldThreadTx.BEEF,
+            inputs: [
+                {
+                    inputDescription: "Slack thread",
+                    txid: txid,
+                    unlockingScript: new HashPuzzle().unlock(oldThreadInfo).toHex(),
+                    outpoint: oldThreadTx.outpoints[0],
+                }
+            ],
+        });
 
-//         broadcastTransaction(response);
+        broadcastTransaction(response);
 
-//         return response;
-//     } catch (error) {
-//         console.error("Error spending thread tx:", error);
-//     }
-// }
+        return response;
+    } catch (error) {
+        console.error("Error spending thread tx:", error);
+    }
+}
 
 async function broadcastTransaction(response) {
     try {
@@ -142,5 +142,5 @@ async function getTransactionByThreadHash(hash) {
 module.exports = {
     createTransaction,
     spendTransaction,
-    //spendOnly,
+    createUnspendableTransaction,
 };

@@ -70,7 +70,7 @@ async function saveThread(threadData, client, txid) {
     saved_by: threadData.saved_by || threadData.triggered_by,
     saved_by_info: savedByUserInfo,
     saved_at: new Date(),
-    last_updated: new Date(),
+    last_updated: threadData.last_updated,
     reactions: parentReactions,
     messages: formattedMessages,
     txid: txid,
@@ -106,7 +106,7 @@ async function saveThread(threadData, client, txid) {
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function addReply(threadTs, message, client, txid) {
+async function addReply(threadTs, message, client, txid, last_updated) {
   const { threadsCollection } = await connectToMongo();
   
   // Get simplified user info for the message author (only id and real_name)
@@ -145,7 +145,7 @@ async function addReply(threadTs, message, client, txid) {
           messages: formattedMessage
         },
         $set: {
-          last_updated: new Date(),
+          last_updated: last_updated,
           txid: txid,
         }
       }
@@ -173,7 +173,7 @@ async function addReply(threadTs, message, client, txid) {
  * @param {Object} rawMessage - Raw message object from Slack
  * @returns {Promise<Object>} - Result of the operation
  */
-async function updateEditedMessage(threadTs, messageTs, newText, rawMessage, txid) {
+async function updateEditedMessage(threadTs, messageTs, newText, rawMessage, txid, last_updated) {
   const { threadsCollection } = await connectToMongo();
   
   try {
@@ -184,7 +184,7 @@ async function updateEditedMessage(threadTs, messageTs, newText, rawMessage, txi
           "messages.$.text": newText,
           "messages.$.edited": true,
           "messages.$.raw": rawMessage,
-          "last_updated": new Date(),
+          "last_updated": last_updated,
           txid: txid,
         }
       }
@@ -212,7 +212,7 @@ async function updateEditedMessage(threadTs, messageTs, newText, rawMessage, txi
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function markMessageDeleted(threadTs, messageTs, client, txid) {
+async function markMessageDeleted(threadTs, messageTs, client, txid, last_updated) {
   const { threadsCollection } = await connectToMongo();
   
   try {
@@ -222,7 +222,7 @@ async function markMessageDeleted(threadTs, messageTs, client, txid) {
         $set: {
           "messages.$.text": "[deleted]",
           "messages.$.deleted": true,
-          "last_updated": new Date(),
+          "last_updated": last_updated,
           txid: txid,
         }
       }
@@ -251,7 +251,7 @@ async function markMessageDeleted(threadTs, messageTs, client, txid) {
  * @param {Object} client - Slack client for API calls
  * @returns {Promise<Object>} - Result of the operation
  */
-async function refreshThread(threadTs, channelId, messages, userId, client, txid) {
+async function refreshThread(threadTs, channelId, messages, userId, client, txid, last_updated) {
   const { threadsCollection } = await connectToMongo();
   
   try {
@@ -269,28 +269,6 @@ async function refreshThread(threadTs, channelId, messages, userId, client, txid
     } catch (error) {
       console.error(`Error fetching user info for ${userId}:`, error);
     }
-    
-    // // Get unique user IDs from all messages to fetch their info
-    // const userIds = new Set();
-    // messages.forEach(message => {
-    //   if (message.user) userIds.add(message.user);
-    // });
-    
-    // // Create a map of user IDs to simplified user info objects (only id and real_name)
-    // const userInfoMap = new Map();
-    // for (const userId of userIds) {
-    //   try {
-    //     const userInfo = await getUserInfoByID(client, userId);
-    //     // Only store the id and real_name from profile
-    //     userInfoMap.set(userId, {
-    //       id: userInfo.id,
-    //       real_name: userInfo.profile?.real_name || userInfo.real_name || userId
-    //     });
-    //   } catch (error) {
-    //     console.error(`Error fetching user info for ${userId}:`, error);
-    //     // If we can't get user info, we'll still use the ID
-    //   }
-    // }
     
     const existingUserInfo = existingThread?.messages?.map(message => message.userInfo);
 
@@ -315,7 +293,7 @@ async function refreshThread(threadTs, channelId, messages, userId, client, txid
       channel: channelId,
       saved_by: existingThread?.saved_by || userId,
       saved_at: existingThread?.saved_at || new Date(),
-      last_updated: new Date(),
+      last_updated: last_updated,
       reactions: parentReactions,
       messages: formattedMessages,
       txid: txid,

@@ -1,5 +1,5 @@
 const { App } = require("@slack/bolt");
-const { createTransaction, spendTransaction, spendOnly } = require('./hooks/transactionHandler.js');
+const { createTransaction, spendTransaction, createUnspendableTransaction } = require('./hooks/transactionHandler.js');
 const { createFilteredThreadInfo } = require('./hooks/threadFormatting.js');
 const {
   errorMessageBlock,
@@ -198,7 +198,7 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       thread_ts: threadTs,
       channel: item.channel,
       saved_by: user,
-      last_updated: item.ts,
+      last_updated: new Date(),
       messages: threadResult.messages,
     };
 
@@ -232,23 +232,23 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       const filteredOldThreadInfo = createFilteredThreadInfo({ thread_ts: oldThreadInfo._id, channel: oldThreadInfo.channel, saved_by: oldThreadInfo.saved_by, messages: oldThreadInfo.messages, last_updated: oldThreadInfo.last_updated });
       console.log("Filtered old thread info: ", filteredOldThreadInfo);
 
-      // try {
-      //   response = await spendTransaction(oldThreadInfo.txid, filteredOldThreadInfo, filteredThreadInfo);
-      //   console.log("Response: ", response);
-      //   if (!response) {
-      //     throw new Error("Failed to create transaction");
-      //   }
-      // } catch (error) {
-      //   console.error("Error creating transaction:", error);
-      //   await client.chat.postEphemeral({
-      //     channel: item.channel,
-      //     thread_ts: threadTs,
-      //     user: user,
-      //     text: "There was an error creating transaction. Please try again.",
-      //     blocks: errorMessageBlock(`There was an error creating transaction. Please try again.`),
-      //   });
-      //   return;
-      // }
+      try {
+        response = await createUnspendableTransaction(oldThreadInfo.txid, filteredOldThreadInfo);
+        console.log("Response: ", response);
+        if (!response) {
+          throw new Error("Failed to create transaction");
+        }
+      } catch (error) {
+        console.error("Error creating transaction:", error);
+        await client.chat.postEphemeral({
+          channel: item.channel,
+          thread_ts: threadTs,
+          user: user,
+          text: "There was an error creating transaction. Please try again.",
+          blocks: errorMessageBlock(`There was an error creating transaction. Please try again.`),
+        });
+        return;
+      }
 
       // Delete the thread - pass the client to fetch user info
       const deleteResult = await deleteThread(threadTs, item.channel, threadResult.messages, user);
@@ -316,7 +316,7 @@ app.event("reaction_added", async ({ event, client, logger }) => {
       }
 
       // Refresh the thread - pass the client to fetch user info
-      const refreshResult = await refreshThread(threadTs, item.channel, threadResult.messages, user, client, response?.txid);
+      const refreshResult = await refreshThread(threadTs, item.channel, threadResult.messages, user, client, response?.txid, filteredThreadInfo.last_updated);
       console.log(`🔄 Refreshed thread ${threadTs} from channel ${item.channel}`);
       console.log(`Refresh result: ${refreshResult.success ? 'Success' : 'Failed'}`);
 
