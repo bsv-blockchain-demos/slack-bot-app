@@ -130,6 +130,28 @@ function paymailRemovedMessageBlock() {
     ];
 }
 
+function usernameSetMessageBlock() {
+    return [
+        {
+            type: "section",
+            text: {
+                type: "mrkdwn",
+                text: `✅ Username set successfully.`,
+            },
+            accessory: {
+                type: "button",
+                text: {
+                    type: "plain_text",
+                    text: "❌ Dismiss",
+                    emoji: true,
+                },
+                value: "dismiss_message",
+                action_id: "dismiss_success",
+            },
+        },
+    ];
+}
+
 module.exports = {
     refreshMessageBlock,
     deleteMessageBlock,
@@ -137,4 +159,5 @@ module.exports = {
     errorMessageBlock,
     paymailSetMessageBlock,
     paymailRemovedMessageBlock,
+    usernameSetMessageBlock,
 }

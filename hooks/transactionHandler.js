@@ -1,6 +1,6 @@
 const { Transaction, TopicBroadcaster, LookupResolver, Utils, Hash } = require("@bsv/sdk");
 const makeWallet = require("./createWallet");
-const HashPuzzle = require("./HashPuzzle");
+const HashPuzzle = require("../utils/HashPuzzle");
 require("dotenv").config();
 
 const randomSecret = process.env.RANDOM_SECRET;
