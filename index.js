@@ -50,6 +50,7 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
 
     // Save the PayMail in the database
     const { usersCollection } = await connectToMongo();
+    console.log("usersCollection is:", usersCollection);
 
     if (paymail === "" || paymail.toLowerCase() === "none") {
       await usersCollection.updateOne(
@@ -77,6 +78,8 @@ app.command("/setpaymail", async ({ ack, body, client }) => {
       { $set: { real_name: userInfo.real_name, paymail } },
       { upsert: true }
     );
+    console.log("Mongo updateOne result (paymail):", result);
+    console.log("Type of result (paymail):", typeof result);
 
     if (!result.acknowledged) {
       await ack({
@@ -122,12 +125,15 @@ app.command("/setusername", async ({ ack, body, client }) => {
     }
 
     const { usersCollection } = await connectToMongo();
+    console.log("usersCollection is:", usersCollection);
 
     const result = await usersCollection.updateOne(
       { _id: userInfo.id }, // use Slack user ID as unique key
       { $set: { username: text.trim() } },
       { upsert: true }
     );
+    console.log("Mongo updateOne result (username):", result);
+    console.log("Type of result (username):", typeof result);
 
     if (!result.acknowledged) {
       await ack({

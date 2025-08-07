@@ -30,6 +30,7 @@ async function createTransaction(threadInfo) {
                 }
             ]
         });
+        console.log("Transaction response:", response);
 
         broadcastTransaction(response);
 
@@ -65,6 +66,7 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
                 }
             ]
         });
+        console.log("Transaction response (spend):", response);
 
         broadcastTransaction(response);
 
@@ -93,6 +95,7 @@ async function createUnspendableTransaction(txid, oldThreadInfo) {
                 }
             ],
         });
+        console.log("Transaction response (unspendable):", response);
 
         broadcastTransaction(response);
 
