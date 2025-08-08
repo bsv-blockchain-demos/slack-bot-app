@@ -35,8 +35,6 @@ async function connectToMongo() {
       await threadsCollection.createIndex({ "channel": 1 }); // Channel ID
       await threadsCollection.createIndex({ "saved_by": 1 }); // User who saved
 
-      await usersCollection.createIndex({ "_id": 1 }, { unique: true });
-      
       console.log("MongoDB indexes created successfully");
     } catch (error) {
       console.error("Error connecting to MongoDB:", error);
