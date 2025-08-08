@@ -379,6 +379,7 @@ async function threadExists(threadTs) {
 async function getUserInfoByID(client, ID) {
   try {
     const userInfo = await client.users.info({ user: ID });
+    console.log(`Fetched user from slack:`, userInfo)
     return userInfo.user;
   } catch (error) {
     console.error(`Error fetching user info for ${ID}:`, error);

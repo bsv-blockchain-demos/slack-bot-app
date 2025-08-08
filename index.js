@@ -110,6 +110,10 @@ app.command("/setusername", async ({ ack, body, client }) => {
     const { user_id, text } = body;
 
     const fullUserInfo = await getUserInfoByID(client, user_id);
+    if (fullUserInfo.id == null) {
+      console.error(`user ID not successfully grabbed from slack`)
+      return
+    }
     const userInfo = {
       id: fullUserInfo.id,
       real_name: fullUserInfo.profile?.real_name || fullUserInfo.real_name || user_id
