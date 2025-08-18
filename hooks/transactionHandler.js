@@ -28,7 +28,8 @@ async function createTransaction(threadInfo) {
                     lockingScript: new HashPuzzle().lock(threadInfo).toHex(),
                     satoshis: 1,
                 }
-            ]
+            ],
+            randomizeOutputs: false,
         });
         console.log("Transaction response:", response);
 
@@ -43,19 +44,21 @@ async function createTransaction(threadInfo) {
 async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
     try {
         const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
-        const hash = Hash.hash256(Utils.toArray(JSON.stringify(oldThreadInfo) + randomSecret, "utf8"));
-        const oldThreadTx = await getTransactionByThreadHash(hash);
+        const oldThreadTx = await getTransactionByTxid(txid);
+        console.log("Old thread tx (spend):", oldThreadTx.outputs[0].beef);
+        
+        const oldTx = Transaction.fromBEEF(oldThreadTx.outputs[0].beef);
+        console.log("Old transaction:", oldTx);
 
         // Use old transaction to make a new one with new info (create chain)
         const response = await wallet.createAction({
             description: "Slack thread",
-            inputBEEF: oldThreadTx.BEEF,
+            inputBEEF: oldThreadTx.outputs[0].beef,
             inputs: [
                 {
                     inputDescription: "Slack thread",
-                    txid: txid,
                     unlockingScript: new HashPuzzle().unlock(oldThreadInfo).toHex(),
-                    outpoint: oldThreadTx.outpoints[0],
+                    outpoint: `${oldTx.sourceTXID}.${oldTx.sourceOutputIndex}`,
                 }
             ],
             outputs: [
@@ -64,7 +67,8 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
                     lockingScript: new HashPuzzle().lock(newThreadInfo).toHex(),
                     satoshis: 1,
                 }
-            ]
+            ],
+            randomizeOutputs: false,
         });
         console.log("Transaction response (spend):", response);
 
@@ -79,19 +83,21 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
 async function createUnspendableTransaction(txid, oldThreadInfo) {
     try {
         const wallet = await makeWallet(CHAIN === 'testnet' ? 'test' : 'main', WALLET_STORAGE_URL, SERVER_PRIVATE_KEY);
-        const hash = Hash.hash256(Utils.toArray(JSON.stringify(oldThreadInfo) + randomSecret, "utf8"));
-        const oldThreadTx = await getTransactionByThreadHash(hash);
+        const oldThreadTx = await getTransactionByTxid(txid);
+        console.log("Old thread tx (unspendable):", oldThreadTx.outputs[0].beef);
+
+        const oldTx = Transaction.fromBEEF(oldThreadTx.outputs[0].beef);
+        console.log("Old transaction:", oldTx);
 
         // Leave output empty to create unspendable transaction on thread delete
         const response = await wallet.createAction({
             description: "Slack thread",
-            inputBEEF: oldThreadTx.BEEF,
+            inputBEEF: oldThreadTx.outputs[0].beef,
             inputs: [
                 {
                     inputDescription: "Slack thread",
-                    txid: txid,
                     unlockingScript: new HashPuzzle().unlock(oldThreadInfo).toHex(),
-                    outpoint: oldThreadTx.outpoints[0],
+                    outpoint: `${oldTx.sourceTXID}.${oldTx.sourceOutputIndex}`,
                 }
             ],
         });
@@ -114,9 +120,6 @@ async function broadcastTransaction(response) {
         // Lookup a service which accepts this type of token
         const tb = new TopicBroadcaster(['tm_slackthread'], {
             resolver: overlay,
-            requireAcknowledgmentFromSpecificHostsForTopics: {
-              'ls_slackthread': ['https://overlay-us-1.bsvb.tech']
-            }
           })
 
         // Send the tx to that overlay.
@@ -127,14 +130,15 @@ async function broadcastTransaction(response) {
     }
 }
 
-async function getTransactionByThreadHash(hash) {
+async function getTransactionByTxid(txid) {
     try {
         // get transaction from overlay
         const response = await overlay.query({
             service: 'ls_slackthread', query: {
-                threadHash: hash
+                txid: txid
             }
         }, 10000);
+        console.log("Response: ", response);
 
         return response;
     } catch (error) {
