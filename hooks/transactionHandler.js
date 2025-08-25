@@ -58,7 +58,7 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
                 {
                     inputDescription: "Slack thread",
                     unlockingScript: new HashPuzzle().unlock(oldThreadInfo).toHex(),
-                    outpoint: `${oldTx.sourceTXID}.${oldTx.sourceOutputIndex}`,
+                    outpoint: `${oldTx.id('hex')}.0`,
                 }
             ],
             outputs: [
