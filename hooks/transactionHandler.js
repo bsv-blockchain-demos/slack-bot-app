@@ -29,7 +29,9 @@ async function createTransaction(threadInfo) {
                     satoshis: 1,
                 }
             ],
-            randomizeOutputs: false,
+            options: {
+                randomizeOutputs: false,
+            }
         });
         console.log("Transaction response:", response);
 
@@ -68,7 +70,9 @@ async function spendTransaction(txid, oldThreadInfo, newThreadInfo) {
                     satoshis: 1,
                 }
             ],
-            randomizeOutputs: false,
+            options: {
+                randomizeOutputs: false,
+            }
         });
         console.log("Transaction response (spend):", response);
 
