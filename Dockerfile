@@ -1,21 +1,26 @@
-# Use a base image
-FROM node:18
+# Build stage — compile native modules (sqlite3 via @bsv/wallet-toolbox)
+FROM node:22-alpine AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+RUN apk add --no-cache python3 make g++ && \
+    npm ci --omit=dev
 
-# Copy the rest of the application code
+# Runtime stage — clean Alpine, no build tools
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Upgrade all packages to pick up latest security patches (e.g. zlib CVE-2026-22184)
+# then add libstdc++ required at runtime by compiled native modules
+RUN apk upgrade --no-cache && \
+    apk add --no-cache libstdc++
+
+COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 
-# Expose the application port
 EXPOSE 3000
 
-# Command to run the application
 CMD ["node", "index.js"]
-
