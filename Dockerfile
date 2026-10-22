@@ -1,5 +1,5 @@
 # Build stage — compile native modules (sqlite3 via @bsv/wallet-toolbox)
-FROM node:22-alpine AS builder
+FROM node:22.23.4-alpine AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN apk add --no-cache python3 make g++ && \
     npm ci --omit=dev
 
 # Runtime stage — clean Alpine, no build tools
-FROM node:22-alpine
+FROM node:22.23.4-alpine
 
 WORKDIR /app
 
